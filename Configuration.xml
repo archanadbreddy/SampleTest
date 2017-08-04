@@ -1,0 +1,8 @@
+<Configuration>
+    <browserType>IE</browserType>
+    <url>http://www.littlewoods.com/</url>
+    <!--<url>http://docs.seleniumhq.org/download/</url>-->
+
+
+
+</Configuration>

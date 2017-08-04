@@ -1,0 +1,83 @@
+<SQLqueries>
+    <feature name="Company Report. Deals Tab. Tabbed view. Compare the data of Deal Asset Type table with DB">
+
+        <query scenario_name="DealsDB_200909">WITH asset_type_list AS
+            (
+            SELECT SUBSTR(sys_connect_by_path(descendant_name, '\'),2,100) AS asset_type
+            , descendant_id asset_id
+            FROM ci_public.jp_deal_asset_type_tree_ad
+            START WITH descendant_depth = 1
+            CONNECT BY NOCYCLE PRIOR descendant_id = ancestor_id
+            ORDER SIBLINGS BY descendant_name
+            )
+            SELECT  asset_type
+            , ACTIVE_COUNT_AS_PRIN
+            , INACTIVE_COUNT_AS_PRIN
+            , ACTIVE_COUNT_AS_PART
+            , INACTIVE_COUNT_AS_PART
+            , COUNT_TOTAL
+            FROM asset_type_list ttl JOIN LS_SRV.JPA_COMPANY_DEAL_CAT_COUNT dc ON (ttl.asset_id = dc.type_id)
+            WHERE company_id = verify_ID
+        </query>
+
+        <query scenario_name="DealsDB_201291">WITH transaction_type_list AS
+            (
+            SELECT  SUBSTR(sys_connect_by_path(descendant_name, '\'),2,100) AS transaction_type
+            , descendant_id transaction_id
+            FROM ci_public.jp_deal_trans_type_tree_ad
+            START WITH descendant_depth = 1
+            CONNECT BY NOCYCLE PRIOR descendant_id = ancestor_id
+            ORDER SIBLINGS BY descendant_name
+            )
+            SELECT  transaction_type
+            , ACTIVE_COUNT_AS_PRIN
+            , INACTIVE_COUNT_AS_PRIN
+            , ACTIVE_COUNT_AS_PART
+            , INACTIVE_COUNT_AS_PART
+            , COUNT_TOTAL
+            FROM transaction_type_list ttl JOIN LS_SRV.JPA_COMPANY_DEAL_CAT_COUNT dc ON (ttl.transaction_id = dc.type_id)
+            WHERE company_id = verify_ID</query>
+    </feature>
+
+    <feature name="CountryOfDevelopment">
+
+        <query scenario_name="@CountryOfDevelopment_024">select companyHq, count(distinct drug_id) from
+            ( SELECT  dd.drug_id as drug_id, dd.indication_id , (SELECT listagg(aid.ancestor_id, ' ') within GROUP(ORDER BY aid.ancestor_depth)
+            FROM (SELECT it.descendant_id, it.ancestor_id, MAX(it.ancestor_depth) AS ancestor_depth FROM jp_ng_fast.indication_tree_ad it
+            GROUP BY it.descendant_id, it.ancestor_id ) aid WHERE aid.descendant_id = dd.indication_id ) AS indication_ancestor_ids, indi.indication_name, dd.company_id,
+            comp.company_name, hq.country_name companyHq, comp.hq_country_id, cty.country_name, dd.country_id,
+            ds.status_name, dd.status_id as status_id FROM jp_ng_fast.drug_development dd JOIN jp_ng_fast.development_status ds ON
+            (ds.status_id = dd.status_id) JOIN jp_ng_fast.country cty ON ( cty.country_id = dd.country_id) JOIN jp_ng_fast.indication indi on
+            ( indi.indication_id = dd.indication_id) JOIN jp_ng_fast.company comp on ( comp.company_id = dd.company_id) LEFT JOIN jp_ng_fast.country hq on
+            ( comp.hq_country_id = hq.country_id) join ( SELECT drug_id, status_id FROM (SELECT drug_id, status_id, sort_order, rank() over
+            (PARTITION BY drug_id ORDER BY sort_order DESC) status_rank FROM ci_public_staging.jp_drug_development_current
+            JOIN  ci_public_staging.jp_development_status_category USING (status_id) WHERE  category_id = 'ALL' GROUP BY drug_id, sort_order, status_id )
+            JOIN  ci_public_staging.jp_development_status USING (status_id) WHERE status_rank = 1 ) hiph on (dd.drug_id = hiph.drug_id and hiph.status_id not in
+            ('OL','W','DX', 'NDR') ) ) where  indication_ancestor_ids like '% verify_ID %' or indication_ancestor_ids like 'verify_ID %' or
+            indication_ancestor_ids like '% verify_ID' group by companyHq order by count(distinct drug_id) desc
+        </query>
+    </feature>
+
+    <feature name="Trials report">
+
+        <query scenario_name="@LS-27876_28281_001">select count(distinct site_id) from
+            (
+            SELECT DISTINCT cs.site_id
+            ,jrt.trial_id AS trial_id
+            ,nvl2(jtrs.status_name,jtrs.status_name,'') as status_name
+            ,nvl2(jtrs.status_name,to_char(crts.verification_date,'YYYY-MM-DD'),'') as verification_date
+            FROM jp_ng_fast.co_reg_trial_site crts
+            JOIN jp_ng_fast.jp_registry_trial jrt ON jrt.registry_trial_id=crts.registry_trial_id
+            JOIN jp_ng_fast.co_site cs ON cs.site_id=crts.site_id
+            LEFT JOIN jp_ng_fast.jp_trial_recruitment_status jtrs on jtrs.recruitment_status_id=crts.recruitment_status_id
+            ORDER BY cs.site_id) where trial_id = verify_ID
+        </query>
+    </feature>
+
+    <feature name="Alerts">
+        <query scenario_name="@QuickSearchAlerts_002">select * from ALERTS.ALERT where ALERT_ID=verify_ID</query>
+        <query scenario_name="@TriggeredAlerts_001">select EMAIL_DISPATCHABLE from ALERTS.AL_LOG_PER_ALERT where ALERT_ID=verify_ID</query>
+        <query scenario_name="@TriggeredAlerts_002">select * from ALERTS.ALERT where ALERT_ID=verify_ID</query>
+    </feature>
+
+</SQLqueries>
