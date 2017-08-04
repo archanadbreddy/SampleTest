@@ -1,5 +1,5 @@
 <Configuration>
-    <browserType>IE</browserType>
+    <browserType>FF</browserType>
     <url>http://www.littlewoods.com/</url>
     <!--<url>http://docs.seleniumhq.org/download/</url>-->
 
