@@ -97,6 +97,7 @@ public class loginPage extends PageInstances {
 //                        profile.setAcceptUntrustedCertificates (true);
 //                        profile.setAssumeUntrustedCertificateIssuer (false);
 //                        profile.setPreference("network.http.sendRefererHeader",1);
+                        System.setProperty("java.awt.headless", "false");
                         driver =new FirefoxDriver ();
                         driver.manage().timeouts().implicitlyWait(60,TimeUnit.SECONDS);
 //                        URL hubaddress=new URL("http://9.202.55.52:4444/wd/hub");
